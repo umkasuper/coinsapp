@@ -75,7 +75,7 @@ BoxLayout:
     CoinScroll:
         id: coins_scroll_view
         #on_scroll_stop: app.coins_scroll_stop()
-        on_custom_event: app.on_custom_callback()
+        on_scroll_down_event: app.on_scroll_down_callback()
         do_scroll_x: False
         GridLayout:
             id: coins_layout

@@ -3,15 +3,9 @@
 import kivy
 from kivy.app import App
 from kivy.uix.button import Button
-from kivy.uix.image import AsyncImage
-# from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
-from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
-# from kivy.graphics import Color, Rectangle
 from kivy.properties import StringProperty, BooleanProperty, NumericProperty
-    # , ObjectProperty
-
 from kivy.clock import Clock
 from bs4 import BeautifulSoup
 
@@ -33,18 +27,18 @@ SERVER_API_PATH = SERVER_PATH + '/api/v1'
 class CoinScroll(ScrollView):
 
     def __init__(self, **kwargs):
-        self.register_event_type('on_custom_event')
+        self.register_event_type('on_scroll_down_event')
         super(CoinScroll, self).__init__(**kwargs)
 
     def on_scroll_stop(self, *args, **kwargs):
         result = super(CoinScroll, self).on_scroll_stop(*args, **kwargs)
 
         if self.scroll_y <= 0:
-            self.dispatch('on_custom_event', 'test message')
+            self.dispatch('on_scroll_down_event')
 
         return result
 
-    def on_custom_event(self, *args):
+    def on_scroll_down_event(self, *args):
         pass
 
 
@@ -247,7 +241,7 @@ class CoinsApp(App):
         r = self.send_http_post('/euro/list_years', None)
         return r if r else ()
 
-    def on_custom_callback(self):
+    def on_scroll_down_callback(self):
         """
         сообщание от ScrollView где отображены монеты
         :return:
