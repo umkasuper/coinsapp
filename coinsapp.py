@@ -66,7 +66,14 @@ class RequestButton(Button):
 
 
 class RequestButtonCountry(RequestButton):
+    img = StringProperty()
+
     def __init__(self, **kwargs):
+        coin = kwargs['coin']
+
+        self.img = SERVER_PATH + coin['img'] if coin['img'] else ""
+        #if coin['img']:
+        #    self.img = SERVER_PATH + coin['img']
         super(RequestButtonCountry, self).__init__(**kwargs)
 
     def get_text(self):

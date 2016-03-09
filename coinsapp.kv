@@ -15,7 +15,33 @@
             pos: self.pos
             size: self.size
 
-<RequestButton>
+#<RequestButton>
+
+<RequestButtonCountry>
+    height: 40
+    size_hint: (1, None)
+    on_press: app.pressed_request_button(self)
+    background_color: 0, .5, 0, 1
+
+    StackLayout:
+        height: 40
+        size_hint: (1, 1)
+        pos: self.parent.pos
+        size: self.parent.size
+        orientation: 'lr-tb'
+        spacing: 10
+
+        AsyncImage:
+            size_hint: (0.2, 1)
+            source: root.img
+
+        Label:
+            text_size: self.width, None
+            size_hint: (0.8, 1)
+            text: root.get_text()
+            markup: True
+
+<RequestButtonYear>
     height: 40
     size_hint: (1, None)
     text_size: self.width, None
@@ -25,7 +51,6 @@
     valign: 'middle'
     on_press: app.pressed_request_button(self)
     markup: True
-
 
 <CoinView>
     cols: 1,
