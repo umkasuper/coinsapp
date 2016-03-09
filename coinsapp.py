@@ -20,7 +20,8 @@ Loader.num_workers = 5
 kivy.require('1.0.8')
 
 # SERVER_PATH = 'http://127.0.0.1:8080/'
-SERVER_PATH = 'http://127.0.0.1:8081'
+#SERVER_PATH = 'http://127.0.0.1:8081'
+SERVER_PATH = 'http://192.168.1.166'
 SERVER_API_PATH = SERVER_PATH + '/api/v1'
 
 
