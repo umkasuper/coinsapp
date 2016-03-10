@@ -3,11 +3,17 @@
 import kivy
 from kivy.app import App
 from kivy.uix.button import Button
+from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import StringProperty, BooleanProperty, NumericProperty
+from kivy.properties import StringProperty, BooleanProperty, NumericProperty, ListProperty
 from kivy.clock import Clock
+from kivy.lang import Builder
+from kivy.uix.popup import Popup
+
 from bs4 import BeautifulSoup
+
+from error import ErrorPopup
 
 from functools import partial
 
@@ -15,6 +21,7 @@ import requests
 import json
 
 from kivy.loader import Loader
+
 Loader.num_workers = 5
 
 kivy.require('1.0.8')
@@ -26,7 +33,6 @@ SERVER_API_PATH = SERVER_PATH + '/api/v1'
 
 
 class CoinScroll(ScrollView):
-
     def __init__(self, **kwargs):
         self.register_event_type('on_scroll_down_event')
         super(CoinScroll, self).__init__(**kwargs)
@@ -47,23 +53,36 @@ class RequestButton(Button):
     have = NumericProperty()
     all = NumericProperty()
     name = StringProperty()
-    authorization = BooleanProperty()
+    color = ListProperty()
 
     def __init__(self, **kwargs):
         coin = kwargs['coin']
         self.name = coin['name']
         self.all = coin['all_coins']
         self.have = coin['have_coins']
-        self.authorization = kwargs['authorization']
+        self.set_color_active()
 
         super(RequestButton, self).__init__(**kwargs)
 
-    def get_text(self):
+    def get_text_request_button(self):
         return ""
 
     @staticmethod
     def gettype():
         return ''
+
+    @staticmethod
+    def get_authorization():
+        return App.get_running_app().authorization
+
+    def is_selected(self):
+        return App.get_running_app().current_button_request == self
+
+    def set_color_active(self):
+        self.color = [1, 0.3, 0.3, 1]
+
+    def set_color_passive(self):
+        self.color = [0.2, 0.1, 0.1, 1]
 
 
 class RequestButtonCountry(RequestButton):
@@ -71,16 +90,15 @@ class RequestButtonCountry(RequestButton):
 
     def __init__(self, **kwargs):
         coin = kwargs['coin']
-
         self.img = SERVER_PATH + coin['img'] if coin['img'] else ""
-        #if coin['img']:
-        #    self.img = SERVER_PATH + coin['img']
         super(RequestButtonCountry, self).__init__(**kwargs)
 
-    def get_text(self):
-        return "%s [color=ff3333](%s%s%s)[/color]" % (u"Все страны" if self.name == 'all' else self.name,
-                                  self.have if self.authorization else "",
-                                  "/" if self.authorization else "", self.all)
+    def get_text_request_button(self):
+        return "%s (%s%s%s)" % \
+               (u"Все страны" if self.name == 'all' else self.name,
+                self.have if self.get_authorization() else "",
+                "/" if self.get_authorization() else "",
+                self.all)
 
     @staticmethod
     def gettype():
@@ -92,10 +110,10 @@ class RequestButtonYear(RequestButton):
         self.type = 'year'
         super(RequestButtonYear, self).__init__(**kwargs)
 
-    def get_text(self):
-        return "%s [color=ff3333](%s%s%s)[/color]" % (self.name,
-                                  self.have if self.authorization else "",
-                                  "/" if self.authorization else "", self.all)
+    def get_text_request_button(self):
+        return "%s (%s%s%s)" % (self.name,
+                                self.have if self.get_authorization() else "",
+                                "/" if self.get_authorization() else "", self.all)
 
     @staticmethod
     def gettype():
@@ -105,6 +123,8 @@ class RequestButtonYear(RequestButton):
 class CoinView(BoxLayout):
     have = BooleanProperty(False)
     img = StringProperty()
+    country = StringProperty()
+    flag = StringProperty()
     year = StringProperty()
     description = StringProperty()
 
@@ -112,11 +132,13 @@ class CoinView(BoxLayout):
         coin = kwargs['coin']
         self.key = coin['key']
         self.have = coin['have']
+        self.country = coin['country']
+        self.flag = SERVER_PATH + coin['flag']
         self.img = SERVER_PATH + coin['img']
         self.year = coin['year']
         self.description = coin['description']
 
-        super(CoinView, self).__init__(**kwargs)
+        BoxLayout.__init__(self, **kwargs)
 
         self.rect = None
         self.points = None
@@ -154,6 +176,30 @@ class CoinView(BoxLayout):
         return super(BoxLayout, self).on_touch_up(touch)
 
 
+class CoinViewCountry(CoinView):
+    def __init__(self, **kwargs):
+        CoinView.__init__(self, **kwargs)
+
+
+class CoinViewYear(CoinView):
+    def __init__(self, **kwargs):
+        CoinView.__init__(self, **kwargs)
+
+
+class CoinViewFactory:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def factory(**kwargs):
+        instance = kwargs['instance']
+        if instance.gettype() == 'country':
+            return CoinViewCountry(**kwargs)
+        if instance.gettype() == 'year':
+            return CoinViewYear(**kwargs)
+        return CoinView(**kwargs)
+
+
 class CoinsApp(App):
     client = None  # клиент для авторизации
     authorization = False
@@ -180,14 +226,14 @@ class CoinsApp(App):
         countries = self.request_all_countries()
         # добавляем в него кнопки со странами
         for country in countries:
-            btn = RequestButtonCountry(coin=country, authorization=self.authorization)
+            btn = RequestButtonCountry(coin=country)
             coins_group_layout.add_widget(btn)
 
         # создаем года
         years = self.request_all_years()
         # добавляемв него кнопки со странами
         for year in years:
-            btn = RequestButtonYear(coin=year, authorization=self.authorization)
+            btn = RequestButtonYear(coin=year)
             coins_group_layout.add_widget(btn)
 
         if coins_group_layout.children:
@@ -203,9 +249,10 @@ class CoinsApp(App):
         try:
             self.client.get(url)
         except requests.ConnectionError:
+            ErrorPopup(title=u'Ошибка', info=u'Ошибка подключения').open()
             return False
         csrftoken = self.client.cookies['csrftoken']
-        payload = {'username': 'maksim', 'password': 'maksim', 'csrfmiddlewaretoken': csrftoken, 'next': '/'}
+        payload = {'username': 'maksim1', 'password': 'maksim', 'csrfmiddlewaretoken': csrftoken, 'next': '/'}
         try:
             r = self.client.post(url, data=payload, headers=dict(Referer=url))
 
@@ -213,6 +260,7 @@ class CoinsApp(App):
                 root_xml = BeautifulSoup(r.text, 'html.parser')
                 loginerror = root_xml.findAll("ul", {"class": "errorlist"})
                 if len(loginerror) != 0:
+                    ErrorPopup(title=u'Ошибка', info=u'Ошибка авторизации').open()
                     return False
                 return True
 
@@ -258,11 +306,12 @@ class CoinsApp(App):
             coins_layout = self.root.ids.coins_layout
             while self.root.ids.coins_scroll_view.scroll_y <= 0:
                 if self.coins:
-                    view_coin = CoinView(coin=self.coins.pop(0))
+                    # view_coin = CoinView(coin=self.coins.pop(0))
+                    view_coin = CoinViewFactory.factory(instance=self.current_button_request, coin=self.coins.pop(0))
                     coins_layout.add_widget(view_coin)
 
-                    percent = (100.0 * view_coin.height)/float(coins_layout.height + 1)
-                    self.root.ids.coins_scroll_view.scroll_y += percent/100.0
+                    percent = (100.0 * view_coin.height) / float(coins_layout.height + 1)
+                    self.root.ids.coins_scroll_view.scroll_y += percent / 100.0
                 else:
                     break
 
@@ -284,8 +333,10 @@ class CoinsApp(App):
             main_box_layout = self.root
             height = 0
             while self.coins:
-                view_coin = CoinView(coin=self.coins.pop(0))
+                # view_coin = CoinView(coin=self.coins.pop(0))
+                view_coin = CoinViewFactory.factory(instance=instance, coin=self.coins.pop(0))
                 coins_layout.add_widget(view_coin)
+
                 height += view_coin.height
                 if main_box_layout.height + view_coin.height < height:
                     break
@@ -298,10 +349,15 @@ class CoinsApp(App):
         # кэшируем последний запрос
         if self.current_button_request == instance:
             return
+
+        if self.current_button_request:
+            self.current_button_request.set_color_active()
         self.current_button_request = instance
+        self.current_button_request.set_color_passive()
 
         Clock.schedule_once(partial(self.request_coins, instance), 0.1)
 
 
 if __name__ == '__main__':
+    Builder.load_file('error.kv')
     CoinsApp().run()

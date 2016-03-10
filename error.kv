@@ -1,0 +1,14 @@
+#:kivy 1.0.4
+
+<ErrorPopup>:
+    size_hint: .5, .5
+    auto_dismiss: False
+    StackLayout:
+        size_hint: 1, None
+        Label:
+            size_hint: 1, .7
+            text: root.info
+        Button:
+            size_hint: 1, .3
+            text: 'ok'
+            on_press: root.dismiss()
