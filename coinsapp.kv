@@ -15,7 +15,7 @@
             pos: self.pos
             size: self.size
 
-#<RequestButton>
+<RequestButton>
 
 <RequestButtonCountry>
     height: 40
@@ -38,14 +38,17 @@
         Label:
             text_size: self.width, None
             size_hint: (0.8, 1)
-            text: root.get_text()
+            #color: root.get_color()
+            color: root.color
+            text: root.get_text_request_button()
             markup: True
+
 
 <RequestButtonYear>
     height: 40
     size_hint: (1, None)
     text_size: self.width, None
-    text: self.get_text()
+    text: self.get_text_request_button()
     background_color: 0, .5, 0, 1
     halign: 'left'
     valign: 'middle'
@@ -67,6 +70,56 @@
         size_hint_x: 0.2
         source: root.img
 
+#    Label:
+#        text: root.year
+#        size_hint_x: 0.2
+#        color: (1, 1, 1, 1)
+#        markup: True
+#
+#    StackLayout:
+#        size_hint: (0.2, 1)
+#        orientation: 'lr-tb'
+#        #pos: self.parent.pos
+#        #size: self.parent.size
+#
+#        Label:
+#            text: root.country
+#            text_size: self.width, None
+#            size_hint: (1, 0.5)
+#            color: (1, 1, 1, 1)
+#            markup: True
+#            halign: 'center'
+#
+#        AsyncImage:
+#            size_hint: (1, 0.5)
+#            source: root.flag
+#
+#    Label:
+#        text: root.description
+#        color: (1, 1, 1, 1)
+#        markup: True
+#        #size_hint_y: None
+#        text_size: self.width, None
+#        #height: self.texture_size[1]
+#        halign: 'left'
+#        valign: 'middle'
+
+
+<CoinViewCountry>
+#    cols: 1,
+#    padding: 10
+#    spacing: 10
+#    size_hint_y: None
+#    canvas.before:
+#        Color:
+#            rgba: [.2, .2, .2, 1] if self.have else [0, 0, 0, 1]
+#        Rectangle:
+#            pos: self.pos
+#            size: self.size
+#    AsyncImage:
+#        size_hint_x: 0.2
+#        source: root.img
+
     Label:
         text: root.year
         size_hint_x: 0.2
@@ -83,6 +136,46 @@
         halign: 'left'
         valign: 'middle'
 
+<CoinViewYear>
+#    cols: 1,
+#    padding: 10
+#    spacing: 10
+#    size_hint_y: None
+#    canvas.before:
+#        Color:
+#            rgba: [.2, .2, .2, 1] if self.have else [0, 0, 0, 1]
+#        Rectangle:
+#            pos: self.pos
+#            size: self.size
+#    AsyncImage:
+#        size_hint_x: 0.2
+#        source: root.img
+
+    StackLayout:
+        size_hint: (0.2, 1)
+        orientation: 'lr-tb'
+
+        Label:
+            text: root.country
+            text_size: self.width, None
+            size_hint: (1, 0.5)
+            color: (1, 1, 1, 1)
+            markup: True
+            halign: 'center'
+
+        AsyncImage:
+            size_hint: (1, 0.5)
+            source: root.flag
+
+    Label:
+        text: root.description
+        color: (1, 1, 1, 1)
+        markup: True
+        #size_hint_y: None
+        text_size: self.width, None
+        #height: self.texture_size[1]
+        halign: 'left'
+        valign: 'middle'
 
 BoxLayout:
     spacing: 10
