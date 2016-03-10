@@ -3,11 +3,13 @@
 import kivy
 from kivy.app import App
 from kivy.uix.button import Button
+from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import StringProperty, BooleanProperty, NumericProperty, ListProperty
 from kivy.clock import Clock
 from bs4 import BeautifulSoup
+from kivy.uix.popup import Popup
 
 from functools import partial
 
@@ -15,6 +17,7 @@ import requests
 import json
 
 from kivy.loader import Loader
+
 Loader.num_workers = 5
 
 kivy.require('1.0.8')
@@ -25,7 +28,6 @@ SERVER_API_PATH = SERVER_PATH + '/api/v1'
 
 
 class CoinScroll(ScrollView):
-
     def __init__(self, **kwargs):
         self.register_event_type('on_scroll_down_event')
         super(CoinScroll, self).__init__(**kwargs)
@@ -105,8 +107,8 @@ class RequestButtonYear(RequestButton):
 
     def get_text_request_button(self):
         return "%s (%s%s%s)" % (self.name,
-                                  self.have if self.get_authorization() else "",
-                                  "/" if self.get_authorization() else "", self.all)
+                                self.have if self.get_authorization() else "",
+                                "/" if self.get_authorization() else "", self.all)
 
     @staticmethod
     def gettype():
@@ -170,19 +172,16 @@ class CoinView(BoxLayout):
 
 
 class CoinViewCountry(CoinView):
-
     def __init__(self, **kwargs):
         CoinView.__init__(self, **kwargs)
 
 
 class CoinViewYear(CoinView):
-
     def __init__(self, **kwargs):
         CoinView.__init__(self, **kwargs)
 
 
 class CoinViewFactory:
-
     def __init__(self):
         pass
 
@@ -245,6 +244,8 @@ class CoinsApp(App):
         try:
             self.client.get(url)
         except requests.ConnectionError:
+            Popup(title=u'Ошибка', content=Label(text=u'Ошибка подключения'),
+                  auto_dismiss=False, size_hint=[.5, .5]).open()
             return False
         csrftoken = self.client.cookies['csrftoken']
         payload = {'username': 'maksim', 'password': 'maksim', 'csrfmiddlewaretoken': csrftoken, 'next': '/'}
@@ -255,6 +256,8 @@ class CoinsApp(App):
                 root_xml = BeautifulSoup(r.text, 'html.parser')
                 loginerror = root_xml.findAll("ul", {"class": "errorlist"})
                 if len(loginerror) != 0:
+                    Popup(title=u'Ошибка', content=Label(text=u'Ошибка авторизации'),
+                          auto_dismiss=False, size_hint=[.5, .5]).open()
                     return False
                 return True
 
@@ -300,12 +303,12 @@ class CoinsApp(App):
             coins_layout = self.root.ids.coins_layout
             while self.root.ids.coins_scroll_view.scroll_y <= 0:
                 if self.coins:
-                    #view_coin = CoinView(coin=self.coins.pop(0))
+                    # view_coin = CoinView(coin=self.coins.pop(0))
                     view_coin = CoinViewFactory.factory(instance=self.current_button_request, coin=self.coins.pop(0))
                     coins_layout.add_widget(view_coin)
 
-                    percent = (100.0 * view_coin.height)/float(coins_layout.height + 1)
-                    self.root.ids.coins_scroll_view.scroll_y += percent/100.0
+                    percent = (100.0 * view_coin.height) / float(coins_layout.height + 1)
+                    self.root.ids.coins_scroll_view.scroll_y += percent / 100.0
                 else:
                     break
 
@@ -327,7 +330,7 @@ class CoinsApp(App):
             main_box_layout = self.root
             height = 0
             while self.coins:
-                #view_coin = CoinView(coin=self.coins.pop(0))
+                # view_coin = CoinView(coin=self.coins.pop(0))
                 view_coin = CoinViewFactory.factory(instance=instance, coin=self.coins.pop(0))
                 coins_layout.add_widget(view_coin)
 
