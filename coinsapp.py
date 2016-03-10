@@ -8,8 +8,12 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import StringProperty, BooleanProperty, NumericProperty, ListProperty
 from kivy.clock import Clock
-from bs4 import BeautifulSoup
+from kivy.lang import Builder
 from kivy.uix.popup import Popup
+
+from bs4 import BeautifulSoup
+
+from error import ErrorPopup
 
 from functools import partial
 
@@ -244,11 +248,10 @@ class CoinsApp(App):
         try:
             self.client.get(url)
         except requests.ConnectionError:
-            Popup(title=u'Ошибка', content=Label(text=u'Ошибка подключения'),
-                  auto_dismiss=False, size_hint=[.5, .5]).open()
+            ErrorPopup(title=u'Ошибка', info=u'Ошибка подключения').open()
             return False
         csrftoken = self.client.cookies['csrftoken']
-        payload = {'username': 'maksim', 'password': 'maksim', 'csrfmiddlewaretoken': csrftoken, 'next': '/'}
+        payload = {'username': 'maksim1', 'password': 'maksim', 'csrfmiddlewaretoken': csrftoken, 'next': '/'}
         try:
             r = self.client.post(url, data=payload, headers=dict(Referer=url))
 
@@ -256,8 +259,7 @@ class CoinsApp(App):
                 root_xml = BeautifulSoup(r.text, 'html.parser')
                 loginerror = root_xml.findAll("ul", {"class": "errorlist"})
                 if len(loginerror) != 0:
-                    Popup(title=u'Ошибка', content=Label(text=u'Ошибка авторизации'),
-                          auto_dismiss=False, size_hint=[.5, .5]).open()
+                    ErrorPopup(title=u'Ошибка', info=u'Ошибка авторизации').open()
                     return False
                 return True
 
@@ -356,4 +358,5 @@ class CoinsApp(App):
 
 
 if __name__ == '__main__':
+    Builder.load_file('error.kv')
     CoinsApp().run()
