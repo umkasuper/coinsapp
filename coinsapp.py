@@ -252,7 +252,7 @@ class CoinsApp(App):
             ErrorPopup(title=u'Ошибка', info=u'Ошибка подключения').open()
             return False
         csrftoken = self.client.cookies['csrftoken']
-        payload = {'username': 'maksim1', 'password': 'maksim', 'csrfmiddlewaretoken': csrftoken, 'next': '/'}
+        payload = {'username': 'maksim', 'password': 'maksim', 'csrfmiddlewaretoken': csrftoken, 'next': '/'}
         try:
             r = self.client.post(url, data=payload, headers=dict(Referer=url))
 
