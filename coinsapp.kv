@@ -1,11 +1,4 @@
-#:kivy 1.0.4
-#<ScrollView>:
-#    canvas:
-#        Color:
-#            rgb: 1, 0, 0
-#        Rectangle:
-#            pos: self.pos
-#            size: self.size
+#:kivy 1.8.0
 
 <GridLayout>:
     canvas:
@@ -16,12 +9,12 @@
             size: self.size
 
 <RequestButton>
-
-<RequestButtonCountry>
     height: 40
     size_hint: (1, None)
-    on_press: app.pressed_request_button(self)
+    on_press: app.on_pressed_request_button(self)
     background_color: 0, .5, 0, 1
+
+<RequestButtonCountry>
 
     StackLayout:
         height: 40
@@ -45,14 +38,11 @@
 
 
 <RequestButtonYear>
-    height: 40
-    size_hint: (1, None)
     text_size: self.width, None
     text: self.get_text_request_button()
-    background_color: 0, .5, 0, 1
+
     halign: 'left'
     valign: 'middle'
-    on_press: app.pressed_request_button(self)
     markup: True
 
 <CoinView>
@@ -70,55 +60,8 @@
         size_hint_x: 0.2
         source: root.img
 
-#    Label:
-#        text: root.year
-#        size_hint_x: 0.2
-#        color: (1, 1, 1, 1)
-#        markup: True
-#
-#    StackLayout:
-#        size_hint: (0.2, 1)
-#        orientation: 'lr-tb'
-#        #pos: self.parent.pos
-#        #size: self.parent.size
-#
-#        Label:
-#            text: root.country
-#            text_size: self.width, None
-#            size_hint: (1, 0.5)
-#            color: (1, 1, 1, 1)
-#            markup: True
-#            halign: 'center'
-#
-#        AsyncImage:
-#            size_hint: (1, 0.5)
-#            source: root.flag
-#
-#    Label:
-#        text: root.description
-#        color: (1, 1, 1, 1)
-#        markup: True
-#        #size_hint_y: None
-#        text_size: self.width, None
-#        #height: self.texture_size[1]
-#        halign: 'left'
-#        valign: 'middle'
-
 
 <CoinViewCountry>
-#    cols: 1,
-#    padding: 10
-#    spacing: 10
-#    size_hint_y: None
-#    canvas.before:
-#        Color:
-#            rgba: [.2, .2, .2, 1] if self.have else [0, 0, 0, 1]
-#        Rectangle:
-#            pos: self.pos
-#            size: self.size
-#    AsyncImage:
-#        size_hint_x: 0.2
-#        source: root.img
 
     Label:
         text: root.year
@@ -137,20 +80,6 @@
         valign: 'middle'
 
 <CoinViewYear>
-#    cols: 1,
-#    padding: 10
-#    spacing: 10
-#    size_hint_y: None
-#    canvas.before:
-#        Color:
-#            rgba: [.2, .2, .2, 1] if self.have else [0, 0, 0, 1]
-#        Rectangle:
-#            pos: self.pos
-#            size: self.size
-#    AsyncImage:
-#        size_hint_x: 0.2
-#        source: root.img
-
     StackLayout:
         size_hint: (0.2, 1)
         orientation: 'lr-tb'
@@ -177,28 +106,57 @@
         halign: 'left'
         valign: 'middle'
 
-BoxLayout:
-    spacing: 10
-    ScrollView:
-        size_hint_x: 0.3
-        color: (1, 1, 1, 1)
-        GridLayout:
-            id: coins_group_layout
-            cols: 1
-            padding: 10
-            spacing: 10
-            size_hint: (1, None)
-            height: self.minimum_height
 
-    CoinScroll:
-        id: coins_scroll_view
-        #on_scroll_stop: app.coins_scroll_stop()
-        on_scroll_down_event: app.on_scroll_down_callback()
-        do_scroll_x: False
-        GridLayout:
-            id: coins_layout
-            cols: 1
-            padding: 10
-            spacing: 10
-            size_hint_y: None
-            height: self.minimum_height
+Screen:
+    name: 'ScreenManager'
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint_y: 1
+
+        ToggleButton:
+            size_hint: None, None
+            height: '40sp'
+            width: '40sp'
+            on_press: app.on_press_property(self)
+            Image:
+                source: 'property.png'
+                y: self.parent.y + 2
+                x: self.parent.x + 2
+                size: 35, 35
+                allow_stretch: True
+
+        ScreenManager:
+            id: sm
+
+            Screen:
+                name: 'screen1'
+
+                BoxLayout:
+                    spacing: 10
+                    ScrollView:
+                        size_hint_x: 0.3
+                        color: (1, 1, 1, 1)
+                        GridLayout:
+                            id: coins_group_layout
+                            cols: 1
+                            padding: 10
+                            spacing: 10
+                            size_hint: (1, None)
+                            height: self.minimum_height
+
+
+                    CoinScroll:
+                        id: coins_scroll_view
+                        #on_scroll_stop: app.coins_scroll_stop()
+                        on_scroll_down_event: app.on_scroll_down_callback()
+                        do_scroll_x: False
+                        GridLayout:
+                            id: coins_layout
+                            cols: 1
+                            padding: 10
+                            spacing: 10
+                            size_hint_y: None
+                            height: self.minimum_height
+
+            Screen:
+                name: 'screen2'

@@ -1,0 +1,57 @@
+#:kivy 1.8.0
+
+<Property>:
+    #size_hint: None, None
+    #size: , 150
+    #pos_hint: {'x': 0}
+    size_hint: .5, .5
+    auto_dismiss: False
+    GridLayout:
+        cols: 1
+        padding: 10
+        spacing: 10
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint: 1, None
+            height: 30
+
+            Label:
+                text_size: self.width, None
+                size_hint: .4, 1
+                text: "username:"
+            TextInput:
+                text_size: self.size, None
+                size_hint: 0.6, 1
+                text: root.username
+
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint: 1, None
+            height: 30
+
+            Label:
+                text_size: self.width, None
+                size_hint: .4, 1
+                text: "password:"
+            TextInput:
+                text_size: self.size, None
+                password: True
+                size_hint: 0.6, 1
+                text: root.password
+
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint: 1, None
+            height: 30
+
+            Button:
+                text: "Отмена"
+                on_press:
+                    root.ok = False
+                    root.dismiss()
+
+            Button:
+                text: "Принять"
+                on_press:
+                    root.ok = True
+                    root.dismiss()

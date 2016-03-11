@@ -8,12 +8,12 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import StringProperty, BooleanProperty, NumericProperty, ListProperty
 from kivy.clock import Clock
-from kivy.lang import Builder
 from kivy.uix.popup import Popup
 
 from bs4 import BeautifulSoup
 
 from error import ErrorPopup
+from property import Property
 
 from functools import partial
 
@@ -218,6 +218,8 @@ class CoinsApp(App):
         Выполняется при старте приложения
         :return: None
         """
+        #Property(auto_dismiss=False, username="maksim", password="maksim").open()
+
         self.authorization = self.login()
 
         coins_group_layout = self.root.ids.coins_group_layout
@@ -237,7 +239,7 @@ class CoinsApp(App):
             coins_group_layout.add_widget(btn)
 
         if coins_group_layout.children:
-            self.pressed_request_button(coins_group_layout.children[0])
+            self.on_pressed_request_button(coins_group_layout.children[0])
 
     def login(self):
         """
@@ -341,7 +343,7 @@ class CoinsApp(App):
                 if main_box_layout.height + view_coin.height < height:
                     break
 
-    def pressed_request_button(self, instance):
+    def on_pressed_request_button(self, instance):
         """
         нажатие на кпопку семейсва Request
         :param instance:
@@ -357,7 +359,18 @@ class CoinsApp(App):
 
         Clock.schedule_once(partial(self.request_coins, instance), 0.1)
 
+    def on_property_dismiss(self, prop, button):
+        if prop.ok:
+            pass
+        button.state = 'normal'
 
-if __name__ == '__main__':
-    Builder.load_file('error.kv')
-    CoinsApp().run()
+    def on_press_property(self, instance):
+        if instance.state == 'down':
+            prop = Property(username="maksim", password="maksim")
+            prop.bind(on_dismiss=lambda x: self.on_property_dismiss(prop, instance))
+            prop.open()
+
+        #if instance.state == 'normal':
+        #    self.root.ids.sm.current = 'screen1'
+
+
