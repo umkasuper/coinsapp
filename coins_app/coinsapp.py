@@ -1,30 +1,26 @@
 # -*- coding: utf-8 -*-
 
-import kivy
-from kivy.app import App
-from kivy.uix.button import Button
-from kivy.uix.label import Label
-from kivy.uix.scrollview import ScrollView
-from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import StringProperty, BooleanProperty, NumericProperty, ListProperty
-from kivy.clock import Clock
-from kivy.uix.popup import Popup
-
-from bs4 import BeautifulSoup
-
-from error import ErrorPopup
-from property import Property
-
+import json
 from functools import partial
 
+import kivy
 import requests
-import json
-
+from bs4 import BeautifulSoup
+from kivy.app import App
+from kivy.clock import Clock
 from kivy.loader import Loader
+from kivy.properties import StringProperty, BooleanProperty, NumericProperty, ListProperty
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.settings import Settings
+
+from error import ErrorPopup
+from settings.password import SettingPassword
 
 Loader.num_workers = 5
 
-kivy.require('1.0.8')
+kivy.require('1.8.0')
 
 # SERVER_PATH = 'http://127.0.0.1:8080/'
 SERVER_PATH = 'http://127.0.0.1:8081'
@@ -176,13 +172,11 @@ class CoinView(BoxLayout):
 
 
 class CoinViewCountry(CoinView):
-    def __init__(self, **kwargs):
-        CoinView.__init__(self, **kwargs)
+    pass
 
 
 class CoinViewYear(CoinView):
-    def __init__(self, **kwargs):
-        CoinView.__init__(self, **kwargs)
+    pass
 
 
 class CoinViewFactory:
@@ -199,6 +193,34 @@ class CoinViewFactory:
         return CoinView(**kwargs)
 
 
+json_settings = '''
+[
+        {
+            "type": "string",
+            "title": "Имя пользователя",
+            "desc": "Имя пользователя",
+            "section": "connection",
+            "key": "username"
+        },
+        {
+            "type": "password",
+            "title": "Пароль",
+            "desc": "Пароль пользователя",
+            "section": "connection",
+            "key": "password"
+        },
+        {
+            "type": "bool",
+            "title": "Режим",
+            "desc": "Режим работы только чтение",
+            "section": "connection",
+            "key": "readonly",
+            "true": "auto"
+        }
+    ]
+'''
+
+
 class CoinsApp(App):
     client = None  # клиент для авторизации
     authorization = False
@@ -208,20 +230,70 @@ class CoinsApp(App):
     """
     конструктор
     """
-
     def __init__(self, **kwargs):
         super(CoinsApp, self).__init__(**kwargs)
+
+        self.settings_cls = Settings
+
+        self.use_kivy_settings = False
+
+    """
+    значение параметров конфигурации по умолчинию
+    """
+    def build_config(self, config):
+        """
+        Задает значение конфигурации по умолчанию
+        """
+        config.setdefaults('connection',
+                           {
+                               'username': 'guest',
+                               'password': 'guest',
+                               'readonly': True
+                           }
+                           )
+
+    """
+    построитель конфигурации
+    """
+    def build_settings(self, settings):
+        """
+        """
+
+        settings.register_type('password', SettingPassword)
+        settings.add_json_panel('Подключение', self.config, data=json_settings)
+
+    """
+    измнение параметров конфигурации
+    """
+    def on_config_change(self, config, section, key, value):
+        """
+        """
+        pass
+
+    """
+    закрытие окна с настройкаим
+    """
+    def close_settings(self, settings):
+        """
+        """
+        self.root.ids.property_button.state = 'normal'
+        super(CoinsApp, self).close_settings(settings)
+
+        self.on_start()
 
     def on_start(self):
         """
         Выполняется при старте приложения
         :return: None
         """
-        #Property(auto_dismiss=False, username="maksim", password="maksim").open()
+        # Property(auto_dismiss=False, username="maksim", password="maksim").open()
 
         self.authorization = self.login()
 
         coins_group_layout = self.root.ids.coins_group_layout
+
+        # очищаем все кнопки если они есть
+        coins_group_layout.clear_widgets()
 
         # создаем страны
         countries = self.request_all_countries()
@@ -237,6 +309,7 @@ class CoinsApp(App):
             btn = RequestButtonYear(coin=year)
             coins_group_layout.add_widget(btn)
 
+        # позиционируемся на последюю запись
         if coins_group_layout.children:
             self.on_pressed_request_button(coins_group_layout.children[0])
 
@@ -253,7 +326,9 @@ class CoinsApp(App):
             ErrorPopup(title=u'Ошибка', info=u'Ошибка подключения').open()
             return False
         csrftoken = self.client.cookies['csrftoken']
-        payload = {'username': 'maksim', 'password': 'maksim', 'csrfmiddlewaretoken': csrftoken, 'next': '/'}
+        username = self.config.get('connection', 'username')
+        password = self.config.get('connection', 'password')
+        payload = {'username': username, 'password': password, 'csrfmiddlewaretoken': csrftoken, 'next': '/'}
         try:
             r = self.client.post(url, data=payload, headers=dict(Referer=url))
 
@@ -307,7 +382,6 @@ class CoinsApp(App):
             coins_layout = self.root.ids.coins_layout
             while self.root.ids.coins_scroll_view.scroll_y <= 0:
                 if self.coins:
-                    # view_coin = CoinView(coin=self.coins.pop(0))
                     view_coin = CoinViewFactory.factory(instance=self.current_button_request, coin=self.coins.pop(0))
                     coins_layout.add_widget(view_coin)
 
@@ -316,6 +390,9 @@ class CoinsApp(App):
                 else:
                     break
 
+    """
+    запрос монеток по нажатию кнопки
+    """
     def request_coins(self, instance, *tmp):
         """
         формирует зпрос по http монет
@@ -342,6 +419,9 @@ class CoinsApp(App):
                 if main_box_layout.height + view_coin.height < height:
                     break
 
+    """
+    нажатие на кнопку запроса монеток
+    """
     def on_pressed_request_button(self, instance):
         """
         нажатие на кпопку семейсва Request
@@ -356,20 +436,12 @@ class CoinsApp(App):
         self.current_button_request = instance
         self.current_button_request.set_color_passive()
 
+        # взводим таймер на реальный запрос
         Clock.schedule_once(partial(self.request_coins, instance), 0.1)
 
-    def on_property_dismiss(self, prop, button):
-        if prop.ok:
-            pass
-        button.state = 'normal'
-
+    """
+    нажатие на кнопку настроек
+    """
     def on_press_property(self, instance):
         if instance.state == 'down':
-            prop = Property(username="maksim", password="maksim")
-            prop.bind(on_dismiss=lambda x: self.on_property_dismiss(prop, instance))
-            prop.open()
-
-        #if instance.state == 'normal':
-        #    self.root.ids.sm.current = 'screen1'
-
-
+            self.open_settings()
