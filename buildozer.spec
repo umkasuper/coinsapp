@@ -84,10 +84,10 @@ android.ndk = 10d
 #android.private_storage = True
 
 # (str) Android NDK directory (if empty, it will be automatically downloaded.)
-android.ndk_path = ~/android-ndk-r10d
+android.ndk_path = ndk
 
 # (str) Android SDK directory (if empty, it will be automatically downloaded.)
-android.sdk_path = ~/adt-bundle-linux-x86-20131030/sdk
+android.sdk_path = sdk
 
 # (str) ANT directory (if empty, it will be automatically downloaded.)
 #android.ant_path =
