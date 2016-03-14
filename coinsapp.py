@@ -24,7 +24,7 @@ from kivy.loader import Loader
 
 Loader.num_workers = 5
 
-kivy.require('1.0.8')
+kivy.require('1.8.0')
 
 # SERVER_PATH = 'http://127.0.0.1:8080/'
 #SERVER_PATH = 'http://127.0.0.1:8081'
