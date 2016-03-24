@@ -22,9 +22,9 @@ Loader.num_workers = 5
 
 kivy.require('1.8.0')
 
-# SERVER_PATH = 'http://127.0.0.1:8080/'
-#SERVER_PATH = 'http://127.0.0.1:8081'
-SERVER_PATH = 'http://192.168.1.166'
+#SERVER_PATH = 'http://127.0.0.1:8080/'
+SERVER_PATH = 'http://192.168.5.106:8081'
+#SERVER_PATH = 'http://192.168.1.166'
 SERVER_API_PATH = SERVER_PATH + '/api/v1'
 
 
@@ -237,6 +237,15 @@ class CoinsApp(App):
         self.settings_cls = Settings
 
         self.use_kivy_settings = False
+
+
+    def on_pause(self):
+        # Here you can save data if needed
+        return True
+
+    def on_resume(self):
+        # Here you can check if any data needs replacing (usually nothing)
+        pass
 
     """
     значение параметров конфигурации по умолчинию
