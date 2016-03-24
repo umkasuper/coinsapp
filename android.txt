@@ -1,0 +1,3 @@
+title=euro_coins
+author=Maksim Kolesnikov
+orientation=landscape
