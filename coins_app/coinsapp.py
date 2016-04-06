@@ -288,6 +288,7 @@ class CoinsApp(App):
         self.root.ids.property_button.state = 'normal'
         super(CoinsApp, self).close_settings(settings)
 
+        self.current_button_request = None
         self.on_start()
 
     def on_start(self):
@@ -403,11 +404,14 @@ class CoinsApp(App):
         if coins_lost_count > coins_scroll_count:  # еще не нужно вставлять
             return
 
+        print "insert coin"
+        print coins_lost_count, coins_scroll_count
+
         # вставляем одну монеты и запускаемся по новой
         view_coin = CoinViewFactory.factory(instance=self.current_button_request, coin=self.coins.pop(0))
         coins_layout.add_widget(view_coin)
 
-        percent = (100.0 * view_coin.height) / float(coins_layout.height + 1)
+        percent = (100.0 * view_coin.height) / float(coins_layout.height)
         self.root.ids.coins_scroll_view.scroll_y += percent / 100.0
 
         Clock.schedule_once(partial(self.insert_coins), 0.1)
