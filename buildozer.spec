@@ -25,7 +25,7 @@ source.include_exts = py,png,jpg,kv,atlas
 #source.exclude_patterns = license,images/*/*.jpg
 
 # (str) Application versioning (method 1)
-version = 0.1
+version = 1.0.0
 
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]
@@ -69,16 +69,16 @@ fullscreen = 1
 android.permissions = INTERNET
 
 # (int) Android API to use
-#android.api = 19
+android.api = 16
 
 # (int) Minimum API required
-#android.minapi = 9
+android.minapi = 16
 
 # (int) Android SDK version to use
-#android.sdk = 20
+android.sdk = 16
 
 # (str) Android NDK version to use
-android.ndk = 10d
+android.ndk = 11d
 
 # (bool) Use --private data storage (True) or --dir public storage (False)
 #android.private_storage = True
@@ -90,7 +90,7 @@ android.ndk_path = ndk
 android.sdk_path = sdk
 
 # (str) ANT directory (if empty, it will be automatically downloaded.)
-#android.ant_path =
+android.ant_path = /usr/bin/ant
 
 # (str) python-for-android git clone directory (if empty, it will be automatically cloned from github)
 #android.p4a_dir =
