@@ -35,9 +35,9 @@ class CoinScroll(ScrollView):
 
     def on_scroll_stop(self, *args, **kwargs):
         result = super(CoinScroll, self).on_scroll_stop(*args, **kwargs)
-
-        if self.scroll_y <= 0:
-            self.dispatch('on_scroll_down_event')
+        #print self.scroll_y
+        #if self.scroll_y <= 0:
+        self.dispatch('on_scroll_down_event')
 
         return result
 
@@ -238,7 +238,6 @@ class CoinsApp(App):
 
         self.use_kivy_settings = False
 
-
     def on_pause(self):
         # Here you can save data if needed
         return True
@@ -314,7 +313,7 @@ class CoinsApp(App):
 
         # создаем года
         years = self.request_all_years()
-        # добавляемв него кнопки со странами
+        # добавляем в него кнопки со странами
         for year in years:
             btn = RequestButtonYear(coin=year)
             coins_group_layout.add_widget(btn)
@@ -383,6 +382,39 @@ class CoinsApp(App):
         r = self.send_http_post('/euro/list_years', None)
         return r if r else ()
 
+    """
+    вставка монеток
+    """
+    def insert_coins(self, *tmp):
+        """
+        вставляет монетки во view
+        :param largs:
+        :return:
+        """
+        if not self.coins:  # нечего вставлять вышли
+            return
+
+        coins_layout = self.root.ids.coins_layout
+
+        coin_height = coins_layout.children[0].height   # высота одной монеты
+        coins_scroll_count = round(self.root.ids.coins_scroll_view.height / coin_height)   # сколько всего видно монет
+        coins_lost_count = round(self.root.ids.coins_scroll_view.viewport_size[1]*self.root.ids.coins_scroll_view.scroll_y / coin_height)   # сколько осталось до конца монет
+
+        if coins_lost_count > coins_scroll_count:  # еще не нужно вставлять
+            return
+
+        # вставляем одну монеты и запускаемся по новой
+        view_coin = CoinViewFactory.factory(instance=self.current_button_request, coin=self.coins.pop(0))
+        coins_layout.add_widget(view_coin)
+
+        percent = (100.0 * view_coin.height) / float(coins_layout.height + 1)
+        self.root.ids.coins_scroll_view.scroll_y += percent / 100.0
+
+        Clock.schedule_once(partial(self.insert_coins), 0.1)
+
+    """
+    сообщение от скроллера
+    """
     def on_scroll_down_callback(self):
         """
         сообщание от ScrollView где отображены монеты
@@ -390,15 +422,15 @@ class CoinsApp(App):
         """
         if self.coins is not None:
             coins_layout = self.root.ids.coins_layout
-            while self.root.ids.coins_scroll_view.scroll_y <= 0:
-                if self.coins:
-                    view_coin = CoinViewFactory.factory(instance=self.current_button_request, coin=self.coins.pop(0))
-                    coins_layout.add_widget(view_coin)
+            if not coins_layout.children:
+                return
 
-                    percent = (100.0 * view_coin.height) / float(coins_layout.height + 1)
-                    self.root.ids.coins_scroll_view.scroll_y += percent / 100.0
-                else:
-                    break
+            if not self.coins:
+                return
+
+            Clock.schedule_once(partial(self.insert_coins), 0.1)
+            return
+
 
     """
     запрос монеток по нажатию кнопки
@@ -418,15 +450,13 @@ class CoinsApp(App):
             coins_layout.clear_widgets()
             coins_scroll_view.scroll_y = 1
 
-            main_box_layout = self.root
             height = 0
             while self.coins:
-                # view_coin = CoinView(coin=self.coins.pop(0))
                 view_coin = CoinViewFactory.factory(instance=instance, coin=self.coins.pop(0))
                 coins_layout.add_widget(view_coin)
 
                 height += view_coin.height
-                if main_box_layout.height + view_coin.height < height:
+                if coins_scroll_view.height + 2*view_coin.height < height:
                     break
 
     """
