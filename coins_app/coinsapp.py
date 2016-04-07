@@ -14,18 +14,24 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.settings import Settings
+from kivy.uix.image import AsyncImage
+from kivy.resources import resource_find
+
+from urlparse import urlparse
 
 from error import ErrorPopup
 from settings.password import SettingPassword
+
+import os.path
 
 Loader.num_workers = 5
 
 kivy.require('1.8.0')
 
 #SERVER_PATH = 'http://127.0.0.1:8080/'
-SERVER_PATH = 'http://192.168.5.106:8081'
+#SERVER_PATH = 'http://192.168.5.106:8081'
 #SERVER_PATH = 'http://192.168.1.166'
-SERVER_API_PATH = SERVER_PATH + '/api/v1'
+#SERVER_API_PATH = SERVER_PATH + '/api/v1'
 
 
 class CoinScroll(ScrollView):
@@ -43,6 +49,44 @@ class CoinScroll(ScrollView):
 
     def on_scroll_down_event(self, *args):
         pass
+
+
+class AsyncImageProxy(AsyncImage):
+    def __init__(self, **kwargs):
+        super(AsyncImageProxy, self).__init__(**kwargs)
+
+    def _load_source(self, *args):
+        source = self.source
+
+        file_name = '.' + urlparse(self.source).path
+        if os.path.isfile(file_name):
+            source = file_name
+
+        if not source:
+            if self._coreimage is not None:
+                self._coreimage.unbind(on_texture=self._on_tex_change)
+            self.texture = None
+            self._coreimage = None
+        else:
+            if not self.is_uri(source):
+                source = resource_find(source)
+            self._coreimage = image = Loader.image(source,
+                nocache=self.nocache, mipmap=self.mipmap,
+                anim_delay=self.anim_delay)
+
+            image.bind(on_load=self._on_source_load)
+            image.bind(on_texture=self._on_tex_change)
+            self.texture = image.texture
+
+        #super(AsyncImageProxy, self)._load_source(*args)
+
+    def _on_source_load(self, value):
+        super(AsyncImageProxy, self)._on_source_load(value)
+        # сохраним на диск
+        file_name = '.' + urlparse(self.source).path
+        #super(AsyncImageProxy, self).save(file_name)
+        if not os.path.isfile(file_name):
+            self.texture.save(file_name)
 
 
 class RequestButton(Button):
@@ -85,8 +129,9 @@ class RequestButtonCountry(RequestButton):
     img = StringProperty()
 
     def __init__(self, **kwargs):
+        ip_address = App.get_running_app().config.get('connection', 'ip_address')
         coin = kwargs['coin']
-        self.img = SERVER_PATH + coin['img'] if coin['img'] else ""
+        self.img = ip_address + coin['img'] if coin['img'] else ""
         super(RequestButtonCountry, self).__init__(**kwargs)
 
     def get_text_request_button(self):
@@ -125,12 +170,14 @@ class CoinView(BoxLayout):
     description = StringProperty()
 
     def __init__(self, **kwargs):
+        ip_address = App.get_running_app().config.get('connection', 'ip_address')
+
         coin = kwargs['coin']
         self.key = coin['key']
         self.have = coin['have']
         self.country = coin['country']
-        self.flag = SERVER_PATH + coin['flag']
-        self.img = SERVER_PATH + coin['img']
+        self.flag = ip_address + coin['flag']
+        self.img = ip_address + coin['img']
         self.year = coin['year']
         self.description = coin['description']
 
@@ -217,6 +264,13 @@ json_settings = '''
             "section": "connection",
             "key": "readonly",
             "true": "auto"
+        },
+        {
+            "type": "string",
+            "title": "Адрес сервера",
+            "desc": "Адрес сервера",
+            "section": "connection",
+            "key": "ip_address"
         }
     ]
 '''
@@ -238,6 +292,8 @@ class CoinsApp(App):
 
         self.use_kivy_settings = False
 
+        self.title = "2euro memorable"
+
     def on_pause(self):
         # Here you can save data if needed
         return True
@@ -257,7 +313,8 @@ class CoinsApp(App):
                            {
                                'username': 'guest',
                                'password': 'guest',
-                               'readonly': True
+                               'readonly': True,
+                               'ip_address': 'http://192.168.5.106:8081'
                            }
                            )
 
@@ -328,7 +385,13 @@ class CoinsApp(App):
         логиниться на сайт
         :return:
         """
-        url = SERVER_PATH + '/login/'
+
+        username = self.config.get('connection', 'username')
+        password = self.config.get('connection', 'password')
+        ip_address = self.config.get('connection', 'ip_address')
+
+        url = ip_address + '/login/'
+
         self.client = requests.session()
         try:
             self.client.get(url)
@@ -336,8 +399,7 @@ class CoinsApp(App):
             ErrorPopup(title=u'Ошибка', info=u'Ошибка подключения').open()
             return False
         csrftoken = self.client.cookies['csrftoken']
-        username = self.config.get('connection', 'username')
-        password = self.config.get('connection', 'password')
+
         payload = {'username': username, 'password': password, 'csrfmiddlewaretoken': csrftoken, 'next': '/'}
         try:
             r = self.client.post(url, data=payload, headers=dict(Referer=url))
@@ -360,9 +422,11 @@ class CoinsApp(App):
         :param url: адрес сайта
         :return:
         """
+        ip_address = self.config.get('connection', 'ip_address') + '/api/v1'
+
         try:
             headers = {'Content-type': 'application/json'}
-            r = self.client.post(SERVER_API_PATH + url, data=json.dumps(post_data), headers=headers)
+            r = self.client.post(ip_address + url, data=json.dumps(post_data), headers=headers)
             return json.loads(r.content)
         except requests.ConnectionError:
             return None
@@ -404,9 +468,6 @@ class CoinsApp(App):
         if coins_lost_count > coins_scroll_count:  # еще не нужно вставлять
             return
 
-        print "insert coin"
-        print coins_lost_count, coins_scroll_count
-
         # вставляем одну монеты и запускаемся по новой
         view_coin = CoinViewFactory.factory(instance=self.current_button_request, coin=self.coins.pop(0))
         coins_layout.add_widget(view_coin)
@@ -446,19 +507,24 @@ class CoinsApp(App):
         :param largs:
         :return:
         """
+
         coins_layout = self.root.ids.coins_layout
         coins_scroll_view = self.root.ids.coins_scroll_view
         post_data = {'what': instance.name, 'type': instance.gettype()}
         self.coins = self.send_http_post('/euro/what', post_data)
+
         if self.coins is not None:
-            coins_layout.clear_widgets()
-            coins_scroll_view.scroll_y = 1
+            if Loader.pool is not None:     # если что то было в овчерди на загрузку,отключаем
+                Loader.stop()
+            coins_layout.clear_widgets()    # удаляем все что было вставлено
+            coins_scroll_view.scroll_y = 1  # скроллер на начало
+
+            coins_scroll_view.height = self.root.height
 
             height = 0
             while self.coins:
                 view_coin = CoinViewFactory.factory(instance=instance, coin=self.coins.pop(0))
                 coins_layout.add_widget(view_coin)
-
                 height += view_coin.height
                 if coins_scroll_view.height + 2*view_coin.height < height:
                     break
@@ -489,3 +555,4 @@ class CoinsApp(App):
     def on_press_property(self, instance):
         if instance.state == 'down':
             self.open_settings()
+
