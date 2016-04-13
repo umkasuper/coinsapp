@@ -1,6 +1,7 @@
 from kivy.uix.settings import SettingString
 from kivy.uix.label import Label
 
+
 class PasswordLabel(Label):
     pass
 
