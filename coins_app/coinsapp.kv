@@ -33,15 +33,17 @@
             size_hint: (0.8, 1)
             #color: root.get_color()
             color: root.color
-            text: root.get_text_request_button()
+            #text: root.get_text_request_button()
+            text: root.text_request_button
             markup: True
 
 
 <RequestButtonYear>
     text_size: self.width, None
-    text: self.get_text_request_button()
+    #text: self.get_text_request_button()
+    text: self.text_request_button
 
-    halign: 'left'
+    halign: 'center'
     valign: 'middle'
     markup: True
 
@@ -136,6 +138,7 @@ Screen:
                 BoxLayout:
                     spacing: 10
                     ScrollView:
+                        id: coins_group_scroll_view
                         size_hint_x: 0.3
                         color: (1, 1, 1, 1)
                         GridLayout:

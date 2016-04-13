@@ -28,11 +28,6 @@ Loader.num_workers = 5
 
 kivy.require('1.8.0')
 
-#SERVER_PATH = 'http://127.0.0.1:8080/'
-#SERVER_PATH = 'http://192.168.5.106:8081'
-#SERVER_PATH = 'http://192.168.1.166'
-#SERVER_API_PATH = SERVER_PATH + '/api/v1'
-
 
 class CoinScroll(ScrollView):
     def __init__(self, **kwargs):
@@ -94,6 +89,7 @@ class RequestButton(Button):
     all = NumericProperty()
     name = StringProperty()
     color = ListProperty()
+    text_request_button = StringProperty()
 
     def __init__(self, **kwargs):
         coin = kwargs['coin']
@@ -101,6 +97,7 @@ class RequestButton(Button):
         self.all = coin['all_coins']
         self.have = coin['have_coins']
         self.set_color_active()
+        self.text_request_button = self.get_text_request_button()
 
         super(RequestButton, self).__init__(**kwargs)
 
@@ -123,6 +120,10 @@ class RequestButton(Button):
 
     def set_color_passive(self):
         self.color = [0.2, 0.1, 0.1, 1]
+
+    def change_have_coins(self, have):
+        self.have += 1 if have else -1
+        self.text_request_button = self.get_text_request_button()
 
 
 class RequestButtonCountry(RequestButton):
@@ -187,10 +188,15 @@ class CoinView(BoxLayout):
         self.points = None
 
     def ownership_change(self, have):
+        readonly = App.get_running_app().config.get('connection', 'readonly') == '1'
+        if readonly:
+            return
         post_data = {'id': self.key, 'have': have}
-        r = CoinsApp.send_http_post("/euro/save", post_data)
-        if r['result']:
-            self.have = have
+        r = App.get_running_app().send_http_post("/euro/save", post_data)
+        if 'result' in r:
+            if r['result'] == 'ok':
+                self.have = have
+                App.get_running_app().change_coin_count(have, self.year, self.country)
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
@@ -202,11 +208,11 @@ class CoinView(BoxLayout):
     def on_touch_move(self, touch):
         if touch.grab_current is self:
             d = (self.points[0] - touch.pos[0], self.points[1] - touch.pos[1])
-            if abs(d[1] < 10):
-                if d[0] < -20:
+            if abs(d[1] < 20):
+                if d[0] < -30:
                     if not self.have:
                         self.ownership_change(True)
-                if d[0] > 20:
+                if d[0] > 30:
                     if self.have:
                         self.ownership_change(False)
             return True
@@ -378,6 +384,7 @@ class CoinsApp(App):
 
         # позиционируемся на последюю запись
         if coins_group_layout.children:
+            self.root.ids.coins_group_scroll_view.scroll_to(coins_group_layout.children[0])
             self.on_pressed_request_button(coins_group_layout.children[0])
 
     def login(self):
@@ -555,4 +562,25 @@ class CoinsApp(App):
     def on_press_property(self, instance):
         if instance.state == 'down':
             self.open_settings()
+
+    """
+    отыскивает группу монет по имени
+    """
+    def get_coins_group_by_name(self, name):
+        coins_group_layout = self.root.ids.coins_group_layout
+
+        for children in coins_group_layout.children:
+            if children.name == name:
+                return children
+        return None
+
+    """
+    изменение количества монет во владении
+    """
+    def change_coin_count(self, have, year, country):
+        for name in [u"all", year, country]:
+            group = self.get_coins_group_by_name(name)
+            if group:
+                group.change_have_coins(have)
+
 
